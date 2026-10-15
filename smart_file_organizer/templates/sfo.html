@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  {% include "_tool_head.html" %}
+  <title>Smart File Organizer</title>
+  <link rel="stylesheet" href="{{ url_for('organizer.static', filename='style.css') }}">
+</head>
+<body>
+  {% include "_tool_nav.html" %}
+  <main class="tool sfo">
+    <p class="kicker"><a href="{{ url_for('home') }}#work">← Work</a> · sandbox</p>
+    <h1>Smart File Organizer</h1>
+    <p class="lede">Sorts a messy inbox by type. Nothing leaves this sandbox, so anyone on this live page can try it.</p>
+
+    <section class="try-it" id="try">
+      <h2>How to tell it works</h2>
+      <ol>
+        <li>Press <strong>Reset sample files</strong> so the inbox has the eight demo files.</li>
+        <li>Check the plan: <span class="mono">holiday.jpg</span> should go to Images, <span class="mono">demo.py</span> to Code, and so on.</li>
+        <li>Press <strong>Apply moves</strong>. The files should leave the inbox and show up in those folders below.</li>
+      </ol>
+      <p>Or skip the clicks: <strong>Run live check</strong> sorts a private copy and prints pass/fail. Same result as <a href="{{ url_for('organizer.check_json') }}">/apps/organizer/check.json</a>.</p>
+      <form method="post">
+        <input type="hidden" name="action" value="live-check">
+        <button class="btn" type="submit">Run live check</button>
+      </form>
+    </section>
+
+    {% if check %}
+    <section class="report {% if check.ok %}is-good{% else %}is-bad{% endif %}" id="live-check">
+      <h2>{% if check.ok %}Live check passed{% else %}Live check failed{% endif %}</h2>
+      <p class="mono">Moved {{ check.moved }} of {{ check.expected }} sample files in a throwaway folder.</p>
+      <ul class="ticks">
+        {% for row in check.plan %}
+        <li class="{% if row.ok %}ok{% else %}no{% endif %}">
+          plan {{ row.file }} → {{ row.expect }}
+          {% if not row.ok %}(got {{ row.got or "nothing" }}){% endif %}
+        </li>
+        {% endfor %}
+        {% for row in check.apply %}
+        <li class="{% if row.ok %}ok{% else %}no{% endif %}">
+          apply landed {{ row.expect }}
+        </li>
+        {% endfor %}
+      </ul>
+    </section>
+    {% endif %}
+
+    <section class="meter">
+      <div><b>{{ inbox_count }}</b><span class="mono">in inbox</span></div>
+      <div><b>{{ moves|length }}</b><span class="mono">planned</span></div>
+    </section>
+    {% if message %}<p class="flash">{{ message }}</p>{% endif %}
+    {% if moves %}
+    <ol class="ledger">
+      {% for move in moves %}
+      <li><span class="mono">{{ move.from }}</span> → <strong>{{ move.to }}</strong></li>
+      {% endfor %}
+    </ol>
+    <form method="post">
+      <input type="hidden" name="action" value="apply">
+      <button class="btn" type="submit">Apply moves</button>
+    </form>
+    {% else %}
+    <p class="intro">Inbox is already sorted{% if folders %} into {{ folders | join(", ") }}{% endif %}.</p>
+    {% endif %}
+
+    {% if shelf %}
+    <section class="shelf">
+      <h2>What’s on the shelf</h2>
+      {% for folder, names in shelf.items() %}
+      <p><strong>{{ folder }}</strong> <span class="mono">{{ names | join(", ") }}</span></p>
+      {% endfor %}
+    </section>
+    {% endif %}
+
+    <table class="expect">
+      <caption>Expected sample sort</caption>
+      <thead>
+        <tr><th>File</th><th>Folder</th></tr>
+      </thead>
+      <tbody>
+        {% for file, folder in samples.items() %}
+        <tr>
+          <td class="mono">{{ file }}</td>
+          <td>{{ folder }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <form method="post" action="{{ url_for('organizer.reset') }}">
+      <button class="btn btn-quiet" type="submit">Reset sample files</button>
+    </form>
+  </main>
+</body>
+</html>
